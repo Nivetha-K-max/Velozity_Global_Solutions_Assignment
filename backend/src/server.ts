@@ -603,3 +603,6 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
 server.listen(config.port, () => {
   console.log(`[Server] Agency Dashboard Backend running on http://localhost:${config.port}`);
 });
+
+export default app;
+
