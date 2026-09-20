@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import {
   Shield, Lock, Mail, ArrowRight, LogOut, Activity, Bell, CheckCircle2,
-  Clock, AlertTriangle, Filter, Plus, UserCheck, LayoutDashboard, Briefcase, RefreshCw, Layers, X
+  Clock, AlertTriangle, Filter, Plus, UserCheck, LayoutDashboard, Briefcase, RefreshCw, Layers, X,
+  BarChart3, TrendingUp, PieChart, Users, ChevronRight
 } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
 
@@ -105,6 +106,163 @@ const initialTasks: Task[] = [
   { id: 'tsk-15', title: 'User Permissions RBAC Grid', description: 'Fine-grained ACL matrix UI', projectId: 'prj-3', developerId: 'usr-dev-2', status: 'DONE', priority: 'LOW', dueDate: futureDate1, isOverdue: false, project: { id: 'prj-3', name: 'AI Analytics Dashboard', managerId: 'usr-pm-2' }, developer: { id: 'usr-dev-2', name: 'Sarah Connor', email: 'dev2@agency.com' } },
 ];
 
+// 7-Day Velocity Line Chart Component (SVG Vector)
+function VelocityLineChart() {
+  return (
+    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+        <div>
+          <h3 className="text-sm font-bold text-white flex items-center gap-2">
+            <TrendingUp className="w-4 h-4 text-sky-400" />
+            7-Day Task Completion & Assignment Trend (Velocity Line Chart)
+          </h3>
+          <p className="text-xs text-slate-400 mt-0.5">Static line chart tracking daily task velocity across projects</p>
+        </div>
+        <div className="flex items-center space-x-4 text-xs">
+          <div className="flex items-center space-x-1.5">
+            <span className="w-3 h-3 rounded-full bg-emerald-400 inline-block"></span>
+            <span className="text-slate-300 font-medium">Completed</span>
+          </div>
+          <div className="flex items-center space-x-1.5">
+            <span className="w-3 h-3 rounded-full bg-sky-400 inline-block"></span>
+            <span className="text-slate-300 font-medium">Assigned</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="relative h-56 w-full pt-4">
+        <svg className="w-full h-full overflow-visible" viewBox="0 0 500 160">
+          <line x1="30" y1="20" x2="480" y2="20" stroke="#334155" strokeDasharray="3 3" strokeWidth="1" />
+          <line x1="30" y1="55" x2="480" y2="55" stroke="#334155" strokeDasharray="3 3" strokeWidth="1" />
+          <line x1="30" y1="90" x2="480" y2="90" stroke="#334155" strokeDasharray="3 3" strokeWidth="1" />
+          <line x1="30" y1="125" x2="480" y2="125" stroke="#334155" strokeDasharray="3 3" strokeWidth="1" />
+
+          <text x="20" y="24" fill="#94a3b8" fontSize="10" textAnchor="end">8</text>
+          <text x="20" y="59" fill="#94a3b8" fontSize="10" textAnchor="end">6</text>
+          <text x="20" y="94" fill="#94a3b8" fontSize="10" textAnchor="end">4</text>
+          <text x="20" y="129" fill="#94a3b8" fontSize="10" textAnchor="end">2</text>
+
+          <polyline
+            fill="none"
+            stroke="#34d399"
+            strokeWidth="3"
+            points="40,125 110,90 180,108 250,55 320,72 390,37 460,20"
+          />
+
+          <polyline
+            fill="none"
+            stroke="#38bdf8"
+            strokeWidth="3"
+            points="40,108 110,90 180,72 250,90 320,55 390,72 460,37"
+          />
+
+          {[
+            { x: 40, y: 125, val: 2 },
+            { x: 110, y: 90, val: 4 },
+            { x: 180, y: 108, val: 3 },
+            { x: 250, y: 55, val: 6 },
+            { x: 320, y: 72, val: 5 },
+            { x: 390, y: 37, val: 7 },
+            { x: 460, y: 20, val: 8 },
+          ].map((pt, i) => (
+            <g key={`comp-${i}`}>
+              <circle cx={pt.x} cy={pt.y} r="4" fill="#34d399" stroke="#064e3b" strokeWidth="2" />
+              <text x={pt.x} y={pt.y - 8} fill="#34d399" fontSize="9" fontWeight="bold" textAnchor="middle">{pt.val}</text>
+            </g>
+          ))}
+
+          {[
+            { x: 40, y: 108, val: 3 },
+            { x: 110, y: 90, val: 4 },
+            { x: 180, y: 72, val: 5 },
+            { x: 250, y: 90, val: 4 },
+            { x: 320, y: 55, val: 6 },
+            { x: 390, y: 72, val: 5 },
+            { x: 460, y: 37, val: 7 },
+          ].map((pt, i) => (
+            <g key={`assg-${i}`}>
+              <circle cx={pt.x} cy={pt.y} r="4" fill="#38bdf8" stroke="#0c4a6e" strokeWidth="2" />
+            </g>
+          ))}
+
+          <text x="40" y="148" fill="#94a3b8" fontSize="10" textAnchor="middle">Mon</text>
+          <text x="110" y="148" fill="#94a3b8" fontSize="10" textAnchor="middle">Tue</text>
+          <text x="180" y="148" fill="#94a3b8" fontSize="10" textAnchor="middle">Wed</text>
+          <text x="250" y="148" fill="#94a3b8" fontSize="10" textAnchor="middle">Thu</text>
+          <text x="320" y="148" fill="#94a3b8" fontSize="10" textAnchor="middle">Fri</text>
+          <text x="390" y="148" fill="#94a3b8" fontSize="10" textAnchor="middle">Sat</text>
+          <text x="460" y="148" fill="#94a3b8" fontSize="10" textAnchor="middle">Sun</text>
+        </svg>
+      </div>
+    </div>
+  );
+}
+
+// Project Workload Bar Chart Component (SVG Vector)
+function ProjectWorkloadBarChart() {
+  return (
+    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h3 className="text-sm font-bold text-white flex items-center gap-2">
+            <BarChart3 className="w-4 h-4 text-purple-400" />
+            Project Task Workload Breakdown (Bar Chart)
+          </h3>
+          <p className="text-xs text-slate-400 mt-0.5">Task status distribution across active client projects</p>
+        </div>
+      </div>
+
+      <div className="space-y-4 pt-2">
+        <div>
+          <div className="flex justify-between text-xs mb-1.5">
+            <span className="font-bold text-slate-200">E-Commerce Platform Redesign</span>
+            <span className="text-slate-400 font-mono">5 Tasks (20% Done)</span>
+          </div>
+          <div className="w-full bg-slate-800 h-3.5 rounded-full overflow-hidden flex">
+            <div className="bg-emerald-500 h-full w-[20%]" title="Done: 1"></div>
+            <div className="bg-sky-500 h-full w-[20%]" title="In Progress: 1"></div>
+            <div className="bg-amber-500 h-full w-[20%]" title="In Review: 1"></div>
+            <div className="bg-slate-600 h-full w-[40%]" title="To Do: 2"></div>
+          </div>
+        </div>
+
+        <div>
+          <div className="flex justify-between text-xs mb-1.5">
+            <span className="font-bold text-slate-200">Mobile Banking SDK</span>
+            <span className="text-slate-400 font-mono">5 Tasks (20% Done)</span>
+          </div>
+          <div className="w-full bg-slate-800 h-3.5 rounded-full overflow-hidden flex">
+            <div className="bg-emerald-500 h-full w-[20%]" title="Done: 1"></div>
+            <div className="bg-sky-500 h-full w-[20%]" title="In Progress: 1"></div>
+            <div className="bg-amber-500 h-full w-[20%]" title="In Review: 1"></div>
+            <div className="bg-slate-600 h-full w-[40%]" title="To Do: 2"></div>
+          </div>
+        </div>
+
+        <div>
+          <div className="flex justify-between text-xs mb-1.5">
+            <span className="font-bold text-slate-200">AI Analytics Dashboard</span>
+            <span className="text-slate-400 font-mono">5 Tasks (20% Done)</span>
+          </div>
+          <div className="w-full bg-slate-800 h-3.5 rounded-full overflow-hidden flex">
+            <div className="bg-emerald-500 h-full w-[20%]" title="Done: 1"></div>
+            <div className="bg-sky-500 h-full w-[20%]" title="In Progress: 1"></div>
+            <div className="bg-amber-500 h-full w-[20%]" title="In Review: 1"></div>
+            <div className="bg-slate-600 h-full w-[40%]" title="To Do: 2"></div>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-center space-x-6 text-[11px] pt-3 border-t border-slate-800">
+          <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded bg-emerald-500"></span> Done</span>
+          <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded bg-sky-500"></span> In Progress</span>
+          <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded bg-amber-500"></span> In Review</span>
+          <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded bg-slate-600"></span> To Do</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Main Application Component
 export function App() {
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
@@ -112,7 +270,7 @@ export function App() {
     localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')!) : null
   );
 
-  const [currentTab, setCurrentTab] = useState<'dashboard' | 'projects'>('dashboard');
+  const [currentTab, setCurrentTab] = useState<'dashboard' | 'projects' | 'analytics'>('dashboard');
 
   // Login form state
   const [email, setEmail] = useState('');
@@ -610,58 +768,125 @@ export function App() {
 
   // Authenticated Portal Layout
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
-      {/* NAVBAR */}
-      <header className="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-md border-b border-slate-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center space-x-6">
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col md:flex-row">
+      {/* LEFT SIDEBAR NAVIGATION (UP AND DOWN) */}
+      <aside className="w-full md:w-64 bg-slate-900 border-b md:border-b-0 md:border-r border-slate-800 flex flex-col justify-between p-4 shrink-0">
+        <div className="space-y-6">
+          {/* BRAND HEADER */}
+          <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="w-9 h-9 rounded-lg bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-sky-500/20">
-                <Shield className="w-5 h-5" />
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-sky-500/20">
+                <Shield className="w-6 h-6" />
               </div>
-              <span className="font-bold text-white text-lg tracking-tight hidden sm:inline">Velozity Agency</span>
+              <div>
+                <h1 className="font-extrabold text-white text-sm tracking-tight leading-tight">Velozity Agency</h1>
+                <p className="text-[10px] text-sky-400 font-bold uppercase tracking-wider">Client Portal</p>
+              </div>
             </div>
 
-            <nav className="flex space-x-1">
-              <button
-                onClick={() => setCurrentTab('dashboard')}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium flex items-center space-x-2 transition-colors ${
-                  currentTab === 'dashboard' ? 'bg-slate-800 text-sky-400' : 'text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                <LayoutDashboard className="w-4 h-4" />
-                <span>Dashboard</span>
-              </button>
+            {user.role === 'ADMIN' && (
+              <div className="md:hidden flex items-center space-x-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px]">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                <span>{onlineCount} Online</span>
+              </div>
+            )}
+          </div>
 
-              <button
-                onClick={() => setCurrentTab('projects')}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium flex items-center space-x-2 transition-colors ${
-                  currentTab === 'projects' ? 'bg-slate-800 text-sky-400' : 'text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                <Briefcase className="w-4 h-4" />
-                <span>Projects & Tasks</span>
-              </button>
-            </nav>
+          {/* VERTICAL MENU (UP AND DOWN) */}
+          <nav className="space-y-1.5">
+            <button
+              onClick={() => setCurrentTab('dashboard')}
+              className={`w-full px-3.5 py-2.5 rounded-xl text-xs font-semibold flex items-center space-x-3 transition-colors ${
+                currentTab === 'dashboard' ? 'bg-sky-500/10 text-sky-400 border border-sky-500/30' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+              }`}
+            >
+              <LayoutDashboard className="w-4 h-4" />
+              <span>Dashboard Overview</span>
+            </button>
+
+            <button
+              onClick={() => setCurrentTab('projects')}
+              className={`w-full px-3.5 py-2.5 rounded-xl text-xs font-semibold flex items-center space-x-3 transition-colors ${
+                currentTab === 'projects' ? 'bg-sky-500/10 text-sky-400 border border-sky-500/30' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+              }`}
+            >
+              <Briefcase className="w-4 h-4" />
+              <span>Projects & Tasks</span>
+            </button>
+
+            <button
+              onClick={() => setCurrentTab('analytics')}
+              className={`w-full px-3.5 py-2.5 rounded-xl text-xs font-semibold flex items-center space-x-3 transition-colors ${
+                currentTab === 'analytics' ? 'bg-sky-500/10 text-sky-400 border border-sky-500/30' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+              }`}
+            >
+              <BarChart3 className="w-4 h-4" />
+              <span>Analytics & Velocity</span>
+            </button>
+
+            <button
+              onClick={() => setShowActivityDrawer(!showActivityDrawer)}
+              className="w-full px-3.5 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-between text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-colors"
+            >
+              <div className="flex items-center space-x-3">
+                <Activity className="w-4 h-4 text-emerald-400" />
+                <span>Activity Feed</span>
+              </div>
+              <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
+            </button>
+          </nav>
+        </div>
+
+        {/* USER PROFILE & LOGOUT */}
+        <div className="pt-4 border-t border-slate-800 space-y-3 mt-6">
+          {user.role === 'ADMIN' && (
+            <div className="hidden md:flex items-center justify-between px-2 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs">
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+                <span>Active Presence</span>
+              </span>
+              <span className="font-bold text-emerald-300">{onlineCount} Online</span>
+            </div>
+          )}
+
+          <div className="flex items-center justify-between px-2">
+            <div className="truncate">
+              <p className="text-xs font-bold text-slate-200 truncate">{user.name}</p>
+              <p className="text-[10px] text-slate-400 truncate">{user.email}</p>
+            </div>
+            <span className="text-[9px] bg-sky-500/20 text-sky-300 font-bold px-2 py-0.5 rounded-md uppercase shrink-0">
+              {user.role}
+            </span>
+          </div>
+
+          <button
+            onClick={handleLogout}
+            className="w-full py-2 px-3 rounded-xl bg-slate-800 hover:bg-rose-500/20 text-slate-300 hover:text-rose-400 text-xs font-semibold flex items-center justify-center space-x-2 transition-colors cursor-pointer"
+          >
+            <LogOut className="w-4 h-4" />
+            <span>Sign Out</span>
+          </button>
+        </div>
+      </aside>
+
+      {/* MAIN VIEW AREA */}
+      <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 space-y-6">
+        {/* HEADER TOP BAR */}
+        <div className="flex items-center justify-between pb-4 border-b border-slate-800/80">
+          <div>
+            <h2 className="text-xl font-extrabold text-white tracking-tight">
+              {currentTab === 'dashboard' && 'Dashboard Overview'}
+              {currentTab === 'projects' && 'Projects & Tasks Management'}
+              {currentTab === 'analytics' && 'Analytics & Performance Velocity'}
+            </h2>
+            <p className="text-xs text-slate-400">
+              {currentTab === 'dashboard' && `Welcome back, ${user.name} (${user.role})`}
+              {currentTab === 'projects' && 'Kanban task board and project filter'}
+              {currentTab === 'analytics' && 'Real-time velocity line charts and workload breakdown'}
+            </p>
           </div>
 
           <div className="flex items-center space-x-3">
-            {user.role === 'ADMIN' && (
-              <div className="hidden md:flex items-center space-x-2 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                <span>{onlineCount} Online Now</span>
-              </div>
-            )}
-
-            {/* Activity Stream Drawer Button */}
-            <button
-              onClick={() => setShowActivityDrawer(!showActivityDrawer)}
-              className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 relative transition-colors"
-              title="Live Activity Feed"
-            >
-              <Activity className="w-4 h-4 text-sky-400" />
-            </button>
-
             {/* Notification Bell */}
             <div className="relative">
               <button
@@ -669,7 +894,7 @@ export function App() {
                   setShowNotifications(!showNotifications);
                   if (!showNotifications) markNotificationsRead();
                 }}
-                className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 relative transition-colors"
+                className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 relative transition-colors"
               >
                 <Bell className="w-4 h-4" />
                 {unreadCount > 0 && (
@@ -688,7 +913,6 @@ export function App() {
                       <button
                         onClick={() => setShowNotifications(false)}
                         className="text-slate-400 hover:text-white p-0.5 rounded-md hover:bg-slate-800 transition-colors"
-                        title="Close Notifications"
                       >
                         <X className="w-3.5 h-3.5" />
                       </button>
@@ -710,90 +934,78 @@ export function App() {
               )}
             </div>
 
-            {/* User Profile Badge */}
-            <div className="flex items-center space-x-2 pl-2 border-l border-slate-800">
-              <div className="text-right hidden sm:block">
-                <p className="text-xs font-semibold text-slate-200">{user.name}</p>
-                <p className="text-[10px] text-sky-400 font-bold uppercase">{user.role}</p>
-              </div>
-              <button
-                onClick={handleLogout}
-                className="p-2 rounded-lg bg-slate-800 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 transition-colors"
-                title="Logout"
-              >
-                <LogOut className="w-4 h-4" />
-              </button>
-            </div>
+            <button
+              onClick={loadDashboardStats}
+              className="p-2.5 bg-slate-900 border border-slate-800 rounded-xl text-slate-400 hover:text-white transition-colors"
+              title="Refresh Data"
+            >
+              <RefreshCw className="w-4 h-4" />
+            </button>
           </div>
         </div>
-      </header>
 
-      {/* MAIN CONTENT AREA */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {currentTab === 'dashboard' ? (
+        {/* TAB CONTENTS */}
+        {currentTab === 'dashboard' && (
           <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-bold text-white tracking-tight">Overview Dashboard</h1>
-                <p className="text-xs text-slate-400">Welcome back, {user.name} ({user.role})</p>
-              </div>
-              <button onClick={loadDashboardStats} className="p-2 bg-slate-900 border border-slate-800 rounded-lg text-slate-400 hover:text-white">
-                <RefreshCw className="w-4 h-4" />
-              </button>
-            </div>
-
             {stats && (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {user.role === 'ADMIN' && (
                   <>
-                    <div className="bg-slate-900 border border-slate-800 p-5 rounded-xl">
+                    <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
                       <p className="text-xs font-semibold text-slate-400 uppercase">Total Projects</p>
-                      <p className="text-3xl font-bold text-white mt-1">{stats.totalProjects}</p>
+                      <p className="text-3xl font-extrabold text-white mt-1">{stats.totalProjects}</p>
                     </div>
-                    <div className="bg-slate-900 border border-slate-800 p-5 rounded-xl">
+                    <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
                       <p className="text-xs font-semibold text-slate-400 uppercase">Total Tasks</p>
-                      <p className="text-3xl font-bold text-sky-400 mt-1">{stats.totalTasks}</p>
+                      <p className="text-3xl font-extrabold text-sky-400 mt-1">{stats.totalTasks}</p>
                     </div>
-                    <div className="bg-slate-900 border border-slate-800 p-5 rounded-xl">
+                    <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
                       <p className="text-xs font-semibold text-slate-400 uppercase">Overdue Tasks</p>
-                      <p className="text-3xl font-bold text-rose-400 mt-1">{stats.overdueTaskCount}</p>
+                      <p className="text-3xl font-extrabold text-rose-400 mt-1">{stats.overdueTaskCount}</p>
                     </div>
-                    <div className="bg-slate-900 border border-slate-800 p-5 rounded-xl">
+                    <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
                       <p className="text-xs font-semibold text-slate-400 uppercase">Users Online</p>
-                      <p className="text-3xl font-bold text-emerald-400 mt-1">{stats.activeUsersOnline}</p>
+                      <p className="text-3xl font-extrabold text-emerald-400 mt-1">{stats.activeUsersOnline}</p>
                     </div>
                   </>
                 )}
 
                 {user.role === 'PROJECT_MANAGER' && (
                   <>
-                    <div className="bg-slate-900 border border-slate-800 p-5 rounded-xl">
+                    <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
                       <p className="text-xs font-semibold text-slate-400 uppercase">My Managed Projects</p>
-                      <p className="text-3xl font-bold text-amber-400 mt-1">{stats.totalProjects}</p>
+                      <p className="text-3xl font-extrabold text-amber-400 mt-1">{stats.totalProjects}</p>
                     </div>
-                    <div className="bg-slate-900 border border-slate-800 p-5 rounded-xl">
+                    <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
                       <p className="text-xs font-semibold text-slate-400 uppercase">High Priority Tasks</p>
-                      <p className="text-3xl font-bold text-rose-400 mt-1">{stats.tasksByPriority?.HIGH || 0}</p>
+                      <p className="text-3xl font-extrabold text-rose-400 mt-1">{stats.tasksByPriority?.HIGH || 0}</p>
                     </div>
                   </>
                 )}
 
                 {user.role === 'DEVELOPER' && (
-                  <div className="bg-slate-900 border border-slate-800 p-5 rounded-xl col-span-2">
+                  <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl col-span-2">
                     <p className="text-xs font-semibold text-slate-400 uppercase">Assigned Tasks</p>
-                    <p className="text-3xl font-bold text-emerald-400 mt-1">{stats.totalAssigned || 0}</p>
+                    <p className="text-3xl font-extrabold text-emerald-400 mt-1">{stats.totalAssigned || 0}</p>
                   </div>
                 )}
               </div>
             )}
+
+            {/* Quick Chart Preview in Dashboard */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-2">
+              <VelocityLineChart />
+              <ProjectWorkloadBarChart />
+            </div>
           </div>
-        ) : (
-          /* PROJECTS & TASKS TAB */
+        )}
+
+        {currentTab === 'projects' && (
           <div className="space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
-                <h1 className="text-2xl font-bold text-white tracking-tight">Project Tasks Kanban</h1>
-                <p className="text-xs text-slate-400">View and manage tasks across projects</p>
+                <h3 className="text-lg font-bold text-white tracking-tight">Project Tasks Kanban Board</h3>
+                <p className="text-xs text-slate-400">Manage task status, developer assignments, and priority</p>
               </div>
 
               {/* Filters */}
@@ -801,7 +1013,7 @@ export function App() {
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="bg-slate-900 border border-slate-800 text-xs text-slate-200 px-3 py-2 rounded-lg"
+                  className="bg-slate-900 border border-slate-800 text-xs text-slate-200 px-3 py-2 rounded-xl focus:outline-none focus:border-sky-500"
                 >
                   <option value="">All Statuses</option>
                   <option value="TO_DO">To Do</option>
@@ -813,7 +1025,7 @@ export function App() {
                 <select
                   value={priorityFilter}
                   onChange={(e) => setPriorityFilter(e.target.value)}
-                  className="bg-slate-900 border border-slate-800 text-xs text-slate-200 px-3 py-2 rounded-lg"
+                  className="bg-slate-900 border border-slate-800 text-xs text-slate-200 px-3 py-2 rounded-xl focus:outline-none focus:border-sky-500"
                 >
                   <option value="">All Priorities</option>
                   <option value="LOW">Low</option>
@@ -829,24 +1041,24 @@ export function App() {
               {(['TO_DO', 'IN_PROGRESS', 'IN_REVIEW', 'DONE'] as TaskStatus[]).map((colStatus) => {
                 const colTasks = tasks.filter((t) => t.status === colStatus);
                 return (
-                  <div key={colStatus} className="bg-slate-900/60 border border-slate-800/80 rounded-xl p-4 flex flex-col">
+                  <div key={colStatus} className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 flex flex-col">
                     <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-3">
                       <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider">{colStatus.replace('_', ' ')}</h3>
-                      <span className="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full font-semibold">
+                      <span className="text-[10px] bg-slate-800 text-slate-400 px-2.5 py-0.5 rounded-full font-semibold">
                         {colTasks.length}
                       </span>
                     </div>
 
-                    <div className="space-y-3 flex-1 overflow-y-auto max-h-[500px]">
+                    <div className="space-y-3 flex-1 overflow-y-auto max-h-[550px]">
                       {colTasks.length === 0 ? (
                         <p className="text-xs text-slate-600 text-center py-6">No tasks</p>
                       ) : (
                         colTasks.map((t) => (
-                          <div key={t.id} className="bg-slate-900 border border-slate-800 p-3 rounded-lg shadow-sm space-y-2">
-                            <div className="flex items-start justify-between">
-                              <h4 className="text-xs font-semibold text-slate-100">{t.title}</h4>
+                          <div key={t.id} className="bg-slate-900 border border-slate-800 p-3.5 rounded-xl shadow-sm space-y-2.5 hover:border-slate-700 transition-colors">
+                            <div className="flex items-start justify-between gap-2">
+                              <h4 className="text-xs font-bold text-slate-100 leading-tight">{t.title}</h4>
                               <span
-                                className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                                className={`text-[9px] font-bold px-1.5 py-0.5 rounded shrink-0 ${
                                   t.priority === 'CRITICAL' || t.priority === 'HIGH'
                                     ? 'bg-rose-500/20 text-rose-300'
                                     : 'bg-sky-500/20 text-sky-300'
@@ -857,14 +1069,13 @@ export function App() {
                             </div>
                             <p className="text-[11px] text-slate-400 line-clamp-2">{t.description}</p>
 
-                            <div className="pt-2 border-t border-slate-800/60 flex items-center justify-between text-[10px] text-slate-500">
+                            <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[10px] text-slate-500">
                               <span>Dev: {t.developer?.name || 'Unassigned'}</span>
 
-                              {/* Simple Status Move Actions */}
                               <select
                                 value={t.status}
                                 onChange={(e) => updateTaskStatus(t.id, e.target.value as TaskStatus)}
-                                className="bg-slate-950 border border-slate-800 text-slate-300 rounded px-1 py-0.5 text-[10px]"
+                                className="bg-slate-950 border border-slate-800 text-slate-300 rounded-md px-1.5 py-0.5 text-[10px] focus:outline-none"
                               >
                                 <option value="TO_DO">To Do</option>
                                 <option value="IN_PROGRESS">In Progress</option>
@@ -879,6 +1090,40 @@ export function App() {
                   </div>
                 );
               })}
+            </div>
+          </div>
+        )}
+
+        {currentTab === 'analytics' && (
+          <div className="space-y-6">
+            {/* Metric Summary Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
+                <p className="text-xs font-semibold text-slate-400 uppercase">Completion Efficiency</p>
+                <p className="text-3xl font-extrabold text-emerald-400 mt-1">86.4%</p>
+                <p className="text-[11px] text-slate-500 mt-1">↑ 4.2% vs last week</p>
+              </div>
+              <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
+                <p className="text-xs font-semibold text-slate-400 uppercase">Avg SLA Cycle Time</p>
+                <p className="text-3xl font-extrabold text-sky-400 mt-1">1.8 Days</p>
+                <p className="text-[11px] text-slate-500 mt-1">↓ 0.4 days faster</p>
+              </div>
+              <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
+                <p className="text-xs font-semibold text-slate-400 uppercase">Overdue Mitigation</p>
+                <p className="text-3xl font-extrabold text-purple-400 mt-1">93.2%</p>
+                <p className="text-[11px] text-slate-500 mt-1">On-time delivery</p>
+              </div>
+              <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
+                <p className="text-xs font-semibold text-slate-400 uppercase">High Priority Ratio</p>
+                <p className="text-3xl font-extrabold text-amber-400 mt-1">88.9%</p>
+                <p className="text-[11px] text-slate-500 mt-1">Resolved on target</p>
+              </div>
+            </div>
+
+            {/* Line Chart & Bar Chart */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <VelocityLineChart />
+              <ProjectWorkloadBarChart />
             </div>
           </div>
         )}
@@ -900,7 +1145,7 @@ export function App() {
               <p className="text-xs text-slate-500 text-center py-6">No recent activity</p>
             ) : (
               activities.map((act) => (
-                <div key={act.id} className="p-3 bg-slate-950 border border-slate-800 rounded-lg text-xs space-y-1">
+                <div key={act.id} className="p-3 bg-slate-950 border border-slate-800 rounded-xl text-xs space-y-1">
                   <p className="text-slate-200 font-medium">{act.textFormatted}</p>
                   <p className="text-[10px] text-slate-500">{new Date(act.timestamp).toLocaleTimeString()}</p>
                 </div>
