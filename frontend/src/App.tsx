@@ -5,9 +5,7 @@ import {
 } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
 
-// ---------------------------------------------------------------------------
-// 1. TYPES
-// ---------------------------------------------------------------------------
+// Application Types & Data Models
 export type Role = 'ADMIN' | 'PROJECT_MANAGER' | 'DEVELOPER';
 export type TaskStatus = 'TO_DO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'DONE';
 export type Priority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
@@ -65,9 +63,7 @@ export interface NotificationItem {
   createdAt: string;
 }
 
-// ---------------------------------------------------------------------------
-// 2. MAIN APP COMPONENT
-// ---------------------------------------------------------------------------
+// Main Application Component
 export function App() {
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
   const [user, setUser] = useState<User | null>(
@@ -278,9 +274,7 @@ export function App() {
     setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
   };
 
-  // ---------------------------------------------------------------------------
-  // LOGIN SCREEN
-  // ---------------------------------------------------------------------------
+  // Login View Render
   if (!token || !user) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
@@ -430,9 +424,7 @@ export function App() {
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // AUTHENTICATED DASHBOARD LAYOUT
-  // ---------------------------------------------------------------------------
+  // Authenticated Portal Layout
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
       {/* NAVBAR */}

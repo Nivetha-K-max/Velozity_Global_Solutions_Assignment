@@ -12,21 +12,17 @@ import { PrismaClient, Role, TaskStatus, Priority } from '@prisma/client';
 
 dotenv.config();
 
-// ---------------------------------------------------------------------------
-// 1. CONFIGURATION & DATABASE SETUP
-// ---------------------------------------------------------------------------
+// Environment & DB initialization
 const config = {
-  port: process.env.PORT || 5000,
+  port: process.env.PORT || 5001,
   jwtAccessSecret: process.env.JWT_ACCESS_SECRET || 'velozity_access_secret_key_2026_super_secure',
   jwtRefreshSecret: process.env.JWT_REFRESH_SECRET || 'velozity_refresh_secret_key_2026_super_secure',
-  clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
+  clientUrl: process.env.CLIENT_URL || 'http://localhost:5174',
 };
 
 const prisma = new PrismaClient();
 
-// ---------------------------------------------------------------------------
-// 2. TYPES & MIDDLEWARES
-// ---------------------------------------------------------------------------
+// Auth User interface for request extensions
 export interface AuthUser {
   id: string;
   email: string;
@@ -42,6 +38,7 @@ declare global {
   }
 }
 
+// Token Verification Middleware
 function authenticateToken(req: Request, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
   const token = authHeader && authHeader.split(' ')[1];
@@ -49,7 +46,7 @@ function authenticateToken(req: Request, res: Response, next: NextFunction) {
   if (!token) {
     return res.status(401).json({
       success: false,
-      error: { message: 'Authentication token is missing', code: 'UNAUTHORIZED' },
+      error: { message: 'Authentication token missing', code: 'UNAUTHORIZED' },
     });
   }
 
@@ -60,11 +57,12 @@ function authenticateToken(req: Request, res: Response, next: NextFunction) {
   } catch (error) {
     return res.status(401).json({
       success: false,
-      error: { message: 'Invalid or expired access token', code: 'INVALID_TOKEN' },
+      error: { message: 'Invalid or expired token', code: 'INVALID_TOKEN' },
     });
   }
 }
 
+// Role-Based Authorization Middleware
 function requireRoles(...allowedRoles: Role[]) {
   return (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) {
@@ -77,7 +75,7 @@ function requireRoles(...allowedRoles: Role[]) {
     if (!allowedRoles.includes(req.user.role)) {
       return res.status(403).json({
         success: false,
-        error: { message: 'Forbidden: Insufficient permissions for this action', code: 'FORBIDDEN' },
+        error: { message: 'Forbidden: Insufficient role permissions', code: 'FORBIDDEN' },
       });
     }
 
@@ -85,7 +83,7 @@ function requireRoles(...allowedRoles: Role[]) {
   };
 }
 
-// Helper for status label formatting
+// Helper to format status names for logs
 function formatStatus(status: TaskStatus | null): string {
   if (!status) return '';
   switch (status) {
@@ -97,12 +95,11 @@ function formatStatus(status: TaskStatus | null): string {
   }
 }
 
-// ---------------------------------------------------------------------------
-// 3. EXPRESS APP & SOCKET.IO SETUP
-// ---------------------------------------------------------------------------
+// Initialize Express & HTTP server
 const app = express();
 const server = http.createServer(app);
 
+// Socket.io Server Setup
 const io = new SocketIOServer(server, {
   cors: {
     origin: config.clientUrl,
@@ -118,14 +115,14 @@ interface AuthenticatedSocket extends Socket {
 
 io.use((socket: AuthenticatedSocket, next) => {
   const token = socket.handshake.auth?.token;
-  if (!token) return next(new Error('Authentication token missing'));
+  if (!token) return next(new Error('Token missing'));
 
   try {
     const decoded = jwt.verify(token, config.jwtAccessSecret) as AuthUser;
     socket.user = decoded;
     next();
   } catch (err) {
-    next(new Error('Authentication error'));
+    next(new Error('Authentication failed'));
   }
 });
 
@@ -188,9 +185,7 @@ function sendLiveNotification(userId: string, notification: any, unreadCount: nu
   io.to(`user:${userId}`).emit('notification:new', { notification, unreadCount });
 }
 
-// ---------------------------------------------------------------------------
-// 4. BACKGROUND CRON JOB
-// ---------------------------------------------------------------------------
+// Background scheduler checking overdue tasks every minute
 cron.schedule('* * * * *', async () => {
   try {
     const now = new Date();
@@ -199,34 +194,35 @@ cron.schedule('* * * * *', async () => {
       data: { isOverdue: true },
     });
     if (result.count > 0) {
-      console.log(`[Cron Job] Flagged ${result.count} tasks as overdue.`);
+      console.log(`[Overdue Cron] Flagged ${result.count} overdue tasks`);
     }
   } catch (error) {
-    console.error('[Cron Job Error]', error);
+    console.error('[Overdue Cron Error]', error);
   }
 });
 
-// ---------------------------------------------------------------------------
-// 5. MIDDLEWARES & API ENDPOINTS
-// ---------------------------------------------------------------------------
+// Server Middleware Configuration
 app.use(cors({ origin: config.clientUrl, credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
 
-// --- AUTH ENDPOINTS ---
-const loginSchema = z.object({ email: z.string().email(), password: z.string().min(1) });
+// Authentication Endpoints
+const loginSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(1),
+});
 
 app.post('/api/auth/login', async (req: Request, res: Response) => {
   const parsed = loginSchema.safeParse(req.body);
   if (!parsed.success) {
-    return res.status(400).json({ success: false, error: { message: 'Invalid format', code: 'VALIDATION_ERROR' } });
+    return res.status(400).json({ success: false, error: { message: 'Invalid credentials format', code: 'VALIDATION_ERROR' } });
   }
 
   const { email, password } = parsed.data;
   try {
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
-      return res.status(401).json({ success: false, error: { message: 'Invalid credentials', code: 'INVALID_CREDENTIALS' } });
+      return res.status(401).json({ success: false, error: { message: 'Invalid email or password', code: 'INVALID_CREDENTIALS' } });
     }
 
     const tokenPayload: AuthUser = { id: user.id, email: user.email, role: user.role, name: user.name };
@@ -242,13 +238,13 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
 
     return res.json({ success: true, data: { accessToken, user: tokenPayload } });
   } catch (error) {
-    return res.status(500).json({ success: false, error: { message: 'Auth server error', code: 'SERVER_ERROR' } });
+    return res.status(500).json({ success: false, error: { message: 'Server authentication error', code: 'SERVER_ERROR' } });
   }
 });
 
 app.post('/api/auth/refresh', async (req: Request, res: Response) => {
   const refreshToken = req.cookies?.refreshToken;
-  if (!refreshToken) return res.status(401).json({ success: false, error: { message: 'No refresh token', code: 'UNAUTHORIZED' } });
+  if (!refreshToken) return res.status(401).json({ success: false, error: { message: 'Missing refresh token', code: 'UNAUTHORIZED' } });
 
   try {
     const decoded = jwt.verify(refreshToken, config.jwtRefreshSecret) as { id: string };
@@ -280,17 +276,17 @@ app.get('/api/users', authenticateToken, async (req: Request, res: Response) => 
     const users = await prisma.user.findMany({ where, select: { id: true, name: true, email: true, role: true }, orderBy: { name: 'asc' } });
     return res.json({ success: true, data: users });
   } catch (error) {
-    return res.status(500).json({ success: false, error: { message: 'Failed users fetch', code: 'SERVER_ERROR' } });
+    return res.status(500).json({ success: false, error: { message: 'Failed to fetch users', code: 'SERVER_ERROR' } });
   }
 });
 
-// --- CLIENTS & PROJECTS ENDPOINTS ---
+// Clients & Projects Endpoints
 app.get('/api/clients', authenticateToken, async (req: Request, res: Response) => {
   try {
     const clients = await prisma.client.findMany({ orderBy: { name: 'asc' } });
     return res.json({ success: true, data: clients });
   } catch (error) {
-    return res.status(500).json({ success: false, error: { message: 'Failed clients fetch', code: 'SERVER_ERROR' } });
+    return res.status(500).json({ success: false, error: { message: 'Failed to fetch clients', code: 'SERVER_ERROR' } });
   }
 });
 
@@ -312,7 +308,7 @@ app.get('/api/projects', authenticateToken, async (req: Request, res: Response) 
     });
     return res.json({ success: true, data: projects });
   } catch (error) {
-    return res.status(500).json({ success: false, error: { message: 'Failed projects fetch', code: 'SERVER_ERROR' } });
+    return res.status(500).json({ success: false, error: { message: 'Failed to fetch projects', code: 'SERVER_ERROR' } });
   }
 });
 
@@ -338,7 +334,7 @@ app.get('/api/projects/:id', authenticateToken, async (req: Request, res: Respon
     }
     return res.json({ success: true, data: project });
   } catch (error) {
-    return res.status(500).json({ success: false, error: { message: 'Failed project detail fetch', code: 'SERVER_ERROR' } });
+    return res.status(500).json({ success: false, error: { message: 'Failed to fetch project detail', code: 'SERVER_ERROR' } });
   }
 });
 
@@ -354,11 +350,11 @@ app.post('/api/projects', authenticateToken, requireRoles('ADMIN', 'PROJECT_MANA
     });
     return res.status(201).json({ success: true, data: project });
   } catch (error) {
-    return res.status(500).json({ success: false, error: { message: 'Failed project creation', code: 'SERVER_ERROR' } });
+    return res.status(500).json({ success: false, error: { message: 'Failed to create project', code: 'SERVER_ERROR' } });
   }
 });
 
-// --- TASKS & ACTIVITY ENDPOINTS ---
+// Tasks & Activity Feed Endpoints
 app.get('/api/tasks', authenticateToken, async (req: Request, res: Response) => {
   const user = req.user!;
   const { status, priority, projectId } = req.query;
@@ -382,7 +378,7 @@ app.get('/api/tasks', authenticateToken, async (req: Request, res: Response) => 
     });
     return res.json({ success: true, data: tasks });
   } catch (error) {
-    return res.status(500).json({ success: false, error: { message: 'Failed tasks fetch', code: 'SERVER_ERROR' } });
+    return res.status(500).json({ success: false, error: { message: 'Failed to fetch tasks', code: 'SERVER_ERROR' } });
   }
 });
 
@@ -397,7 +393,7 @@ const createTaskSchema = z.object({
 
 app.post('/api/tasks', authenticateToken, requireRoles('ADMIN', 'PROJECT_MANAGER'), async (req: Request, res: Response) => {
   const parsed = createTaskSchema.safeParse(req.body);
-  if (!parsed.success) return res.status(400).json({ success: false, error: { message: 'Invalid data', code: 'VALIDATION_ERROR' } });
+  if (!parsed.success) return res.status(400).json({ success: false, error: { message: 'Invalid data input', code: 'VALIDATION_ERROR' } });
 
   const { title, description, projectId, developerId, priority, dueDate } = parsed.data;
   const user = req.user!;
@@ -424,7 +420,7 @@ app.post('/api/tasks', authenticateToken, requireRoles('ADMIN', 'PROJECT_MANAGER
 
     return res.status(201).json({ success: true, data: task });
   } catch (error) {
-    return res.status(500).json({ success: false, error: { message: 'Failed task creation', code: 'SERVER_ERROR' } });
+    return res.status(500).json({ success: false, error: { message: 'Failed to create task', code: 'SERVER_ERROR' } });
   }
 });
 
@@ -480,7 +476,7 @@ app.patch('/api/tasks/:id/status', authenticateToken, async (req: Request, res: 
 
     return res.json({ success: true, data: updatedTask });
   } catch (error) {
-    return res.status(500).json({ success: false, error: { message: 'Failed status update', code: 'SERVER_ERROR' } });
+    return res.status(500).json({ success: false, error: { message: 'Failed to update task status', code: 'SERVER_ERROR' } });
   }
 });
 
@@ -518,11 +514,11 @@ app.get('/api/activity', authenticateToken, async (req: Request, res: Response) 
 
     return res.json({ success: true, data: formatted });
   } catch (error) {
-    return res.status(500).json({ success: false, error: { message: 'Failed activity fetch', code: 'SERVER_ERROR' } });
+    return res.status(500).json({ success: false, error: { message: 'Failed to fetch activity feed', code: 'SERVER_ERROR' } });
   }
 });
 
-// --- DASHBOARD & NOTIFICATIONS ENDPOINTS ---
+// Dashboard Analytics & Notifications
 app.get('/api/dashboard/stats', authenticateToken, async (req: Request, res: Response) => {
   const user = req.user!;
   try {
@@ -562,9 +558,9 @@ app.get('/api/dashboard/stats', authenticateToken, async (req: Request, res: Res
       return res.json({ success: true, data: { role: 'DEVELOPER', totalAssigned: assignedTasks.length, tasks: assignedTasks } });
     }
 
-    return res.status(400).json({ success: false, error: { message: 'Invalid role', code: 'INVALID_ROLE' } });
+    return res.status(400).json({ success: false, error: { message: 'Invalid user role', code: 'INVALID_ROLE' } });
   } catch (error) {
-    return res.status(500).json({ success: false, error: { message: 'Failed stats fetch', code: 'SERVER_ERROR' } });
+    return res.status(500).json({ success: false, error: { message: 'Failed to fetch dashboard stats', code: 'SERVER_ERROR' } });
   }
 });
 
@@ -575,7 +571,7 @@ app.get('/api/notifications', authenticateToken, async (req: Request, res: Respo
     const unreadCount = await prisma.notification.count({ where: { userId: user.id, isRead: false } });
     return res.json({ success: true, data: { notifications, unreadCount } });
   } catch (error) {
-    return res.status(500).json({ success: false, error: { message: 'Failed notifications fetch', code: 'SERVER_ERROR' } });
+    return res.status(500).json({ success: false, error: { message: 'Failed to fetch notifications', code: 'SERVER_ERROR' } });
   }
 });
 
@@ -591,18 +587,16 @@ app.patch('/api/notifications/read', authenticateToken, async (req: Request, res
     const unreadCount = await prisma.notification.count({ where: { userId: user.id, isRead: false } });
     return res.json({ success: true, data: { unreadCount } });
   } catch (error) {
-    return res.status(500).json({ success: false, error: { message: 'Failed read notification update', code: 'SERVER_ERROR' } });
+    return res.status(500).json({ success: false, error: { message: 'Failed to update notification read status', code: 'SERVER_ERROR' } });
   }
 });
 
-// ---------------------------------------------------------------------------
-// 6. GLOBAL ERROR HANDLER & SERVER LISTEN
-// ---------------------------------------------------------------------------
+// Centralized Express Error Handler
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-  console.error('[Unhandled Error]', err);
+  console.error('[Server Error]', err);
   return res.status(err.status || 500).json({
     success: false,
-    error: { message: err.message || 'Server error', code: err.code || 'INTERNAL_ERROR' },
+    error: { message: err.message || 'Internal server error', code: err.code || 'INTERNAL_ERROR' },
   });
 });
 
