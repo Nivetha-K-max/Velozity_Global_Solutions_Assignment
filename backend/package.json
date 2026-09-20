@@ -4,7 +4,7 @@
   "description": "Real-time agency client project dashboard backend",
   "main": "dist/server.js",
   "scripts": {
-    "build": "prisma generate && tsc",
+    "build": "npx prisma generate && tsc",
     "start": "node dist/server.js",
     "dev": "tsx watch src/server.ts",
     "prisma:generate": "prisma generate",
