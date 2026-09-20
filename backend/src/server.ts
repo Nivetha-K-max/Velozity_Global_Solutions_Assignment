@@ -48,9 +48,7 @@ declare global {
   }
 }
 
-// ==========================================
-// IN-MEMORY FALLBACK DATABASE STORE
-// ==========================================
+// In-memory dataset fallback
 const defaultPasswordHash = bcrypt.hashSync('password123', 10);
 
 const mockUsers: Array<any> = [
@@ -122,7 +120,7 @@ function hydrateTask(task: any) {
   };
 }
 
-// FAILSAFE DB QUERY HELPER
+// Database query helper with in-memory fallback
 async function findUserByEmail(email: string) {
   if (prisma) {
     try {
