@@ -1,0 +1,22 @@
+# Node modules (auto-installed dependencies - ignored by Git & VS Code)
+node_modules/
+**/node_modules/
+
+# Build outputs
+dist/
+build/
+**/dist/
+
+# Environment files
+.env
+*.local
+
+# Database / Prisma artifacts
+prisma/*.db
+prisma/*.db-journal
+
+# Logs & OS metadata
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
