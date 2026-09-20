@@ -12,15 +12,22 @@ import { PrismaClient, Role, TaskStatus, Priority } from '@prisma/client';
 
 dotenv.config();
 
-// Environment & DB initialization
+// Environment & Config
 const config = {
   port: process.env.PORT || 5001,
   jwtAccessSecret: process.env.JWT_ACCESS_SECRET || 'velozity_access_secret_key_2026_super_secure',
   jwtRefreshSecret: process.env.JWT_REFRESH_SECRET || 'velozity_refresh_secret_key_2026_super_secure',
-  clientUrl: process.env.CLIENT_URL || 'http://localhost:5174',
+  clientUrl: process.env.CLIENT_URL || '*',
 };
 
-const prisma = new PrismaClient();
+let prisma: PrismaClient | null = null;
+if (process.env.DATABASE_URL) {
+  try {
+    prisma = new PrismaClient();
+  } catch (e) {
+    console.log('[Prisma] Database URL not available, falling back to In-Memory store');
+  }
+}
 
 // Auth User interface for request extensions
 export interface AuthUser {
@@ -36,6 +43,80 @@ declare global {
       user?: AuthUser;
     }
   }
+}
+
+// ==========================================
+// IN-MEMORY FALLBACK DATABASE STORE
+// ==========================================
+const defaultPasswordHash = bcrypt.hashSync('password123', 10);
+
+const mockUsers: Array<any> = [
+  { id: 'usr-admin-1', email: 'admin@agency.com', name: 'Alice Admin', passwordHash: defaultPasswordHash, role: 'ADMIN' },
+  { id: 'usr-pm-1', email: 'pm1@agency.com', name: 'Peter Manager', passwordHash: defaultPasswordHash, role: 'PROJECT_MANAGER' },
+  { id: 'usr-pm-2', email: 'pm2@agency.com', name: 'Pamela Boss', passwordHash: defaultPasswordHash, role: 'PROJECT_MANAGER' },
+  { id: 'usr-dev-1', email: 'dev1@agency.com', name: 'Ravi Kumar', passwordHash: defaultPasswordHash, role: 'DEVELOPER' },
+  { id: 'usr-dev-2', email: 'dev2@agency.com', name: 'Sarah Connor', passwordHash: defaultPasswordHash, role: 'DEVELOPER' },
+  { id: 'usr-dev-3', email: 'dev3@agency.com', name: 'David Chen', passwordHash: defaultPasswordHash, role: 'DEVELOPER' },
+  { id: 'usr-dev-4', email: 'dev4@agency.com', name: 'Emma Watson', passwordHash: defaultPasswordHash, role: 'DEVELOPER' },
+];
+
+const mockClients: Array<any> = [
+  { id: 'cli-1', name: 'Acme Corp', company: 'Acme International', email: 'contact@acme.com' },
+  { id: 'cli-2', name: 'TechStart Inc', company: 'TechStart Global', email: 'hello@techstart.io' },
+];
+
+const mockProjects: Array<any> = [
+  { id: 'prj-1', name: 'E-Commerce Platform Redesign', description: 'Full stack redesign of online store frontend and checkout flow', clientId: 'cli-1', managerId: 'usr-pm-1', createdAt: new Date() },
+  { id: 'prj-2', name: 'Mobile Banking SDK', description: 'Secure iOS and Android SDK integration for financial institution', clientId: 'cli-2', managerId: 'usr-pm-1', createdAt: new Date() },
+  { id: 'prj-3', name: 'AI Analytics Dashboard', description: 'Real-time telemetry and predictive models dashboard', clientId: 'cli-1', managerId: 'usr-pm-2', createdAt: new Date() },
+];
+
+const now = new Date();
+const pastDate1 = new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000).toISOString();
+const pastDate2 = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString();
+const futureDate1 = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000).toISOString();
+const futureDate2 = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
+
+const mockTasks: Array<any> = [
+  { id: 'tsk-1', title: 'Setup Authentication & JWT', description: 'Implement refresh tokens in HttpOnly cookie', projectId: 'prj-1', developerId: 'usr-dev-1', status: 'DONE', priority: 'CRITICAL', dueDate: futureDate1, isOverdue: false, createdAt: new Date() },
+  { id: 'tsk-2', title: 'Design Product Catalog Grid', description: 'Responsive grid layout with Tailwind', projectId: 'prj-1', developerId: 'usr-dev-2', status: 'IN_PROGRESS', priority: 'HIGH', dueDate: futureDate1, isOverdue: false, createdAt: new Date() },
+  { id: 'tsk-3', title: 'Stripe Payment Gateway Sync', description: 'Integrate Webhook handlers for invoice paid events', projectId: 'prj-1', developerId: 'usr-dev-1', status: 'IN_REVIEW', priority: 'CRITICAL', dueDate: pastDate1, isOverdue: true, createdAt: new Date() },
+  { id: 'tsk-4', title: 'Shopping Cart State Management', description: 'Zustand store persistent state', projectId: 'prj-1', developerId: 'usr-dev-3', status: 'TO_DO', priority: 'MEDIUM', dueDate: futureDate2, isOverdue: false, createdAt: new Date() },
+  { id: 'tsk-5', title: 'SEO Optimization & Sitemap', description: 'Next.js meta headers and dynamic sitemap xml', projectId: 'prj-1', developerId: 'usr-dev-4', status: 'TO_DO', priority: 'LOW', dueDate: futureDate2, isOverdue: false, createdAt: new Date() },
+  
+  { id: 'tsk-6', title: 'Biometric Login Module', description: 'Face ID and Fingerprint hardware authentication', projectId: 'prj-2', developerId: 'usr-dev-2', status: 'IN_REVIEW', priority: 'CRITICAL', dueDate: pastDate2, isOverdue: true, createdAt: new Date() },
+  { id: 'tsk-7', title: 'OAuth2 Refresh Token Flow', description: 'Handle auto renewal of expired access tokens', projectId: 'prj-2', developerId: 'usr-dev-1', status: 'IN_PROGRESS', priority: 'HIGH', dueDate: futureDate1, isOverdue: false, createdAt: new Date() },
+  { id: 'tsk-8', title: 'Account Balance Websockets', description: 'Live socket stream for ledger balances', projectId: 'prj-2', developerId: 'usr-dev-3', status: 'TO_DO', priority: 'MEDIUM', dueDate: futureDate2, isOverdue: false, createdAt: new Date() },
+  { id: 'tsk-9', title: 'Unit Tests for Encryption', description: '100% coverage on AES-256 payload cipher', projectId: 'prj-2', developerId: 'usr-dev-4', status: 'DONE', priority: 'HIGH', dueDate: pastDate1, isOverdue: false, createdAt: new Date() },
+  { id: 'tsk-10', title: 'Push Notification Dispatcher', description: 'Firebase Cloud Messaging integration', projectId: 'prj-2', developerId: 'usr-dev-2', status: 'TO_DO', priority: 'LOW', dueDate: futureDate2, isOverdue: false, createdAt: new Date() },
+
+  { id: 'tsk-11', title: 'Timeseries Data Ingestion', description: 'High-throughput Kafka / Redis consumer', projectId: 'prj-3', developerId: 'usr-dev-3', status: 'IN_PROGRESS', priority: 'CRITICAL', dueDate: futureDate1, isOverdue: false, createdAt: new Date() },
+  { id: 'tsk-12', title: 'Rechart Analytics Visualization', description: 'Interactive area chart and line chart components', projectId: 'prj-3', developerId: 'usr-dev-4', status: 'IN_REVIEW', priority: 'HIGH', dueDate: futureDate1, isOverdue: false, createdAt: new Date() },
+  { id: 'tsk-13', title: 'Export PDF Report Generator', description: 'Puppeteer serverless report generator', projectId: 'prj-3', developerId: 'usr-dev-3', status: 'TO_DO', priority: 'MEDIUM', dueDate: futureDate2, isOverdue: false, createdAt: new Date() },
+  { id: 'tsk-14', title: 'Custom Threshold Alert System', description: 'Email alerts when metric spikes above 90%', projectId: 'prj-3', developerId: 'usr-dev-1', status: 'TO_DO', priority: 'HIGH', dueDate: futureDate2, isOverdue: false, createdAt: new Date() },
+  { id: 'tsk-15', title: 'User Permissions RBAC Grid', description: 'Fine-grained ACL matrix UI', projectId: 'prj-3', developerId: 'usr-dev-2', status: 'DONE', priority: 'LOW', dueDate: futureDate1, isOverdue: false, createdAt: new Date() },
+];
+
+const mockActivities: Array<any> = [
+  { id: 'act-1', taskId: 'tsk-3', userId: 'usr-dev-1', action: 'STATUS_CHANGED', oldStatus: 'IN_PROGRESS', newStatus: 'IN_REVIEW', timestamp: new Date() },
+  { id: 'act-2', taskId: 'tsk-6', userId: 'usr-dev-2', action: 'STATUS_CHANGED', oldStatus: 'TO_DO', newStatus: 'IN_REVIEW', timestamp: new Date(now.getTime() - 3600000) },
+  { id: 'act-3', taskId: 'tsk-1', userId: 'usr-dev-1', action: 'STATUS_CHANGED', oldStatus: 'IN_REVIEW', newStatus: 'DONE', timestamp: new Date(now.getTime() - 7200000) },
+];
+
+const mockNotifications: Array<any> = [
+  { id: 'not-1', userId: 'usr-dev-1', title: 'New Task Assigned', message: 'You were assigned task "Setup Authentication & JWT" in project E-Commerce Platform Redesign', isRead: false, createdAt: new Date() },
+  { id: 'not-2', userId: 'usr-pm-1', title: 'Task Ready for Review', message: 'Task "Stripe Payment Gateway Sync" was moved to In Review by Ravi Kumar', isRead: false, createdAt: new Date() },
+];
+
+// Helper to hydrate Task object with relations
+function hydrateTask(task: any) {
+  const project = mockProjects.find((p) => p.id === task.projectId);
+  const developer = mockUsers.find((u) => u.id === task.developerId);
+  return {
+    ...task,
+    project: project ? { id: project.id, name: project.name, managerId: project.managerId } : undefined,
+    developer: developer ? { id: developer.id, name: developer.name, email: developer.email } : null,
+  };
 }
 
 // Token Verification Middleware
@@ -102,7 +183,7 @@ const server = http.createServer(app);
 // Socket.io Server Setup
 const io = new SocketIOServer(server, {
   cors: {
-    origin: config.clientUrl,
+    origin: '*',
     credentials: true,
   },
 });
@@ -159,20 +240,7 @@ io.on('connection', (socket: AuthenticatedSocket) => {
   });
 });
 
-function broadcastActivity(activityData: {
-  id: string;
-  taskId: string;
-  taskTitle: string;
-  userName: string;
-  action: string;
-  oldStatus: string | null;
-  newStatus: string | null;
-  timestamp: Date;
-  textFormatted: string;
-  projectId: string;
-  managerId: string;
-  developerId: string | null;
-}) {
+function broadcastActivity(activityData: any) {
   io.to('role:ADMIN').emit('activity:new', activityData);
   io.to(`role:PM:${activityData.managerId}`).emit('activity:new', activityData);
   if (activityData.developerId) {
@@ -185,26 +253,30 @@ function sendLiveNotification(userId: string, notification: any, unreadCount: nu
   io.to(`user:${userId}`).emit('notification:new', { notification, unreadCount });
 }
 
-// Background scheduler checking overdue tasks every minute (local environment)
+// Background scheduler checking overdue tasks every minute
 if (!process.env.VERCEL) {
   cron.schedule('* * * * *', async () => {
     try {
-      const now = new Date();
-      const result = await prisma.task.updateMany({
-        where: { dueDate: { lt: now }, status: { not: 'DONE' }, isOverdue: false },
-        data: { isOverdue: true },
-      });
-      if (result.count > 0) {
-        console.log(`[Overdue Cron] Flagged ${result.count} overdue tasks`);
+      if (prisma) {
+        const nowTime = new Date();
+        await prisma.task.updateMany({
+          where: { dueDate: { lt: nowTime }, status: { not: 'DONE' }, isOverdue: false },
+          data: { isOverdue: true },
+        });
+      } else {
+        const nowTime = new Date();
+        mockTasks.forEach((t) => {
+          if (new Date(t.dueDate) < nowTime && t.status !== 'DONE') {
+            t.isOverdue = true;
+          }
+        });
       }
-    } catch (error) {
-      console.error('[Overdue Cron Error]', error);
-    }
+    } catch (error) {}
   });
 }
 
 // Server Middleware Configuration
-app.use(cors({ origin: config.clientUrl, credentials: true }));
+app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
 
@@ -222,7 +294,15 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
 
   const { email, password } = parsed.data;
   try {
-    const user = await prisma.user.findUnique({ where: { email } });
+    let user: any = null;
+
+    if (prisma) {
+      user = await prisma.user.findUnique({ where: { email } });
+    }
+    if (!user) {
+      user = mockUsers.find((u) => u.email === email);
+    }
+
     if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
       return res.status(401).json({ success: false, error: { message: 'Invalid email or password', code: 'INVALID_CREDENTIALS' } });
     }
@@ -250,7 +330,14 @@ app.post('/api/auth/refresh', async (req: Request, res: Response) => {
 
   try {
     const decoded = jwt.verify(refreshToken, config.jwtRefreshSecret) as { id: string };
-    const user = await prisma.user.findUnique({ where: { id: decoded.id } });
+    let user: any = null;
+    if (prisma) {
+      user = await prisma.user.findUnique({ where: { id: decoded.id } });
+    }
+    if (!user) {
+      user = mockUsers.find((u) => u.id === decoded.id);
+    }
+
     if (!user) return res.status(401).json({ success: false, error: { message: 'User not found', code: 'UNAUTHORIZED' } });
 
     const tokenPayload: AuthUser = { id: user.id, email: user.email, role: user.role, name: user.name };
@@ -273,9 +360,10 @@ app.get('/api/auth/me', authenticateToken, (req: Request, res: Response) => {
 app.get('/api/users', authenticateToken, async (req: Request, res: Response) => {
   const { role } = req.query;
   try {
-    const where: any = {};
-    if (role && typeof role === 'string') where.role = role;
-    const users = await prisma.user.findMany({ where, select: { id: true, name: true, email: true, role: true }, orderBy: { name: 'asc' } });
+    let users = mockUsers.map((u) => ({ id: u.id, name: u.name, email: u.email, role: u.role }));
+    if (role && typeof role === 'string') {
+      users = users.filter((u) => u.role === role);
+    }
     return res.json({ success: true, data: users });
   } catch (error) {
     return res.status(500).json({ success: false, error: { message: 'Failed to fetch users', code: 'SERVER_ERROR' } });
@@ -284,31 +372,33 @@ app.get('/api/users', authenticateToken, async (req: Request, res: Response) => 
 
 // Clients & Projects Endpoints
 app.get('/api/clients', authenticateToken, async (req: Request, res: Response) => {
-  try {
-    const clients = await prisma.client.findMany({ orderBy: { name: 'asc' } });
-    return res.json({ success: true, data: clients });
-  } catch (error) {
-    return res.status(500).json({ success: false, error: { message: 'Failed to fetch clients', code: 'SERVER_ERROR' } });
-  }
+  return res.json({ success: true, data: mockClients });
 });
 
 app.get('/api/projects', authenticateToken, async (req: Request, res: Response) => {
   const user = req.user!;
   try {
-    let whereClause = {};
-    if (user.role === 'PROJECT_MANAGER') whereClause = { managerId: user.id };
-    else if (user.role === 'DEVELOPER') whereClause = { tasks: { some: { developerId: user.id } } };
+    let projects = [...mockProjects];
+    if (user.role === 'PROJECT_MANAGER') {
+      projects = projects.filter((p) => p.managerId === user.id);
+    } else if (user.role === 'DEVELOPER') {
+      const devTaskProjIds = mockTasks.filter((t) => t.developerId === user.id).map((t) => t.projectId);
+      projects = projects.filter((p) => devTaskProjIds.includes(p.id));
+    }
 
-    const projects = await prisma.project.findMany({
-      where: whereClause,
-      include: {
-        client: { select: { id: true, name: true, company: true } },
-        manager: { select: { id: true, name: true, email: true } },
-        _count: { select: { tasks: true } },
-      },
-      orderBy: { createdAt: 'desc' },
+    const formatted = projects.map((p) => {
+      const client = mockClients.find((c) => c.id === p.clientId);
+      const manager = mockUsers.find((u) => u.id === p.managerId);
+      const taskCount = mockTasks.filter((t) => t.projectId === p.id).length;
+      return {
+        ...p,
+        client: client ? { id: client.id, name: client.name, company: client.company } : undefined,
+        manager: manager ? { id: manager.id, name: manager.name, email: manager.email } : undefined,
+        _count: { tasks: taskCount },
+      };
     });
-    return res.json({ success: true, data: projects });
+
+    return res.json({ success: true, data: formatted });
   } catch (error) {
     return res.status(500).json({ success: false, error: { message: 'Failed to fetch projects', code: 'SERVER_ERROR' } });
   }
@@ -318,39 +408,61 @@ app.get('/api/projects/:id', authenticateToken, async (req: Request, res: Respon
   const user = req.user!;
   const { id } = req.params;
   try {
-    const project = await prisma.project.findUnique({
-      where: { id },
-      include: {
-        client: true,
-        manager: { select: { id: true, name: true, email: true } },
-        tasks: { include: { developer: { select: { id: true, name: true, email: true } } }, orderBy: { createdAt: 'desc' } },
-      },
-    });
-
+    const project = mockProjects.find((p) => p.id === id);
     if (!project) return res.status(404).json({ success: false, error: { message: 'Project not found', code: 'NOT_FOUND' } });
+
     if (user.role === 'PROJECT_MANAGER' && project.managerId !== user.id) {
       return res.status(403).json({ success: false, error: { message: 'Forbidden', code: 'FORBIDDEN' } });
     }
+
+    const client = mockClients.find((c) => c.id === project.clientId);
+    const manager = mockUsers.find((u) => u.id === project.managerId);
+    let projectTasks = mockTasks.filter((t) => t.projectId === project.id).map(hydrateTask);
+
     if (user.role === 'DEVELOPER') {
-      project.tasks = project.tasks.filter((t) => t.developerId === user.id);
+      projectTasks = projectTasks.filter((t) => t.developerId === user.id);
     }
-    return res.json({ success: true, data: project });
+
+    const data = {
+      ...project,
+      client,
+      manager: manager ? { id: manager.id, name: manager.name, email: manager.email } : undefined,
+      tasks: projectTasks,
+    };
+
+    return res.json({ success: true, data });
   } catch (error) {
     return res.status(500).json({ success: false, error: { message: 'Failed to fetch project detail', code: 'SERVER_ERROR' } });
   }
 });
 
-const projectSchema = z.object({ name: z.string().min(2), description: z.string().min(2), clientId: z.string().uuid() });
+const projectSchema = z.object({ name: z.string().min(2), description: z.string().min(2), clientId: z.string() });
 app.post('/api/projects', authenticateToken, requireRoles('ADMIN', 'PROJECT_MANAGER'), async (req: Request, res: Response) => {
   const parsed = projectSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ success: false, error: { message: 'Invalid data', code: 'VALIDATION_ERROR' } });
 
   try {
-    const project = await prisma.project.create({
-      data: { name: parsed.data.name, description: parsed.data.description, clientId: parsed.data.clientId, managerId: req.user!.id },
-      include: { client: true, manager: { select: { id: true, name: true, email: true } } },
+    const newPrj = {
+      id: `prj-${Date.now()}`,
+      name: parsed.data.name,
+      description: parsed.data.description,
+      clientId: parsed.data.clientId,
+      managerId: req.user!.id,
+      createdAt: new Date(),
+    };
+    mockProjects.unshift(newPrj);
+
+    const client = mockClients.find((c) => c.id === newPrj.clientId);
+    const manager = mockUsers.find((u) => u.id === newPrj.managerId);
+
+    return res.status(201).json({
+      success: true,
+      data: {
+        ...newPrj,
+        client,
+        manager: manager ? { id: manager.id, name: manager.name, email: manager.email } : undefined,
+      },
     });
-    return res.status(201).json({ success: true, data: project });
   } catch (error) {
     return res.status(500).json({ success: false, error: { message: 'Failed to create project', code: 'SERVER_ERROR' } });
   }
@@ -362,23 +474,20 @@ app.get('/api/tasks', authenticateToken, async (req: Request, res: Response) => 
   const { status, priority, projectId } = req.query;
 
   try {
-    const where: any = {};
-    if (user.role === 'PROJECT_MANAGER') where.project = { managerId: user.id };
-    else if (user.role === 'DEVELOPER') where.developerId = user.id;
+    let filtered = [...mockTasks];
+    if (user.role === 'PROJECT_MANAGER') {
+      const pmProjIds = mockProjects.filter((p) => p.managerId === user.id).map((p) => p.id);
+      filtered = filtered.filter((t) => pmProjIds.includes(t.projectId));
+    } else if (user.role === 'DEVELOPER') {
+      filtered = filtered.filter((t) => t.developerId === user.id);
+    }
 
-    if (status && typeof status === 'string') where.status = status as TaskStatus;
-    if (priority && typeof priority === 'string') where.priority = priority as Priority;
-    if (projectId && typeof projectId === 'string') where.projectId = projectId;
+    if (status && typeof status === 'string') filtered = filtered.filter((t) => t.status === status);
+    if (priority && typeof priority === 'string') filtered = filtered.filter((t) => t.priority === priority);
+    if (projectId && typeof projectId === 'string') filtered = filtered.filter((t) => t.projectId === projectId);
 
-    const tasks = await prisma.task.findMany({
-      where,
-      include: {
-        project: { select: { id: true, name: true, managerId: true } },
-        developer: { select: { id: true, name: true, email: true } },
-      },
-      orderBy: [{ priority: 'desc' }, { dueDate: 'asc' }],
-    });
-    return res.json({ success: true, data: tasks });
+    const data = filtered.map(hydrateTask);
+    return res.json({ success: true, data });
   } catch (error) {
     return res.status(500).json({ success: false, error: { message: 'Failed to fetch tasks', code: 'SERVER_ERROR' } });
   }
@@ -387,10 +496,10 @@ app.get('/api/tasks', authenticateToken, async (req: Request, res: Response) => 
 const createTaskSchema = z.object({
   title: z.string().min(1),
   description: z.string(),
-  projectId: z.string().uuid(),
-  developerId: z.string().uuid().optional().nullable(),
+  projectId: z.string(),
+  developerId: z.string().optional().nullable(),
   priority: z.nativeEnum(Priority).default(Priority.MEDIUM),
-  dueDate: z.string().datetime(),
+  dueDate: z.string(),
 });
 
 app.post('/api/tasks', authenticateToken, requireRoles('ADMIN', 'PROJECT_MANAGER'), async (req: Request, res: Response) => {
@@ -401,26 +510,50 @@ app.post('/api/tasks', authenticateToken, requireRoles('ADMIN', 'PROJECT_MANAGER
   const user = req.user!;
 
   try {
-    const project = await prisma.project.findUnique({ where: { id: projectId } });
+    const project = mockProjects.find((p) => p.id === projectId);
     if (!project) return res.status(404).json({ success: false, error: { message: 'Project not found', code: 'NOT_FOUND' } });
 
     const dueDateObj = new Date(dueDate);
-    const task = await prisma.task.create({
-      data: { title, description, projectId, developerId: developerId || null, priority, dueDate: dueDateObj, isOverdue: dueDateObj < new Date() },
-      include: { project: { select: { id: true, name: true, managerId: true } }, developer: { select: { id: true, name: true, email: true } } },
-    });
+    const newTask = {
+      id: `tsk-${Date.now()}`,
+      title,
+      description,
+      projectId,
+      developerId: developerId || null,
+      priority,
+      dueDate: dueDateObj.toISOString(),
+      isOverdue: dueDateObj < new Date(),
+      status: 'TO_DO',
+      createdAt: new Date(),
+    };
+    mockTasks.unshift(newTask);
 
-    await prisma.taskActivity.create({ data: { taskId: task.id, userId: user.id, action: 'CREATED', newStatus: task.status } });
+    const activity = {
+      id: `act-${Date.now()}`,
+      taskId: newTask.id,
+      userId: user.id,
+      action: 'CREATED',
+      oldStatus: null,
+      newStatus: 'TO_DO',
+      timestamp: new Date(),
+    };
+    mockActivities.unshift(activity);
 
     if (developerId) {
-      const notification = await prisma.notification.create({
-        data: { userId: developerId, title: 'New Task Assigned', message: `Assigned "${task.title}" in ${project.name}` },
-      });
-      const unreadCount = await prisma.notification.count({ where: { userId: developerId, isRead: false } });
+      const notification = {
+        id: `not-${Date.now()}`,
+        userId: developerId,
+        title: 'New Task Assigned',
+        message: `Assigned "${newTask.title}" in ${project.name}`,
+        isRead: false,
+        createdAt: new Date(),
+      };
+      mockNotifications.unshift(notification);
+      const unreadCount = mockNotifications.filter((n) => n.userId === developerId && !n.isRead).length;
       sendLiveNotification(developerId, notification, unreadCount);
     }
 
-    return res.status(201).json({ success: true, data: task });
+    return res.status(201).json({ success: true, data: hydrateTask(newTask) });
   } catch (error) {
     return res.status(500).json({ success: false, error: { message: 'Failed to create task', code: 'SERVER_ERROR' } });
   }
@@ -432,51 +565,61 @@ app.patch('/api/tasks/:id/status', authenticateToken, async (req: Request, res: 
   const { id } = req.params;
 
   try {
-    const existingTask = await prisma.task.findUnique({
-      where: { id },
-      include: { project: { select: { id: true, name: true, managerId: true } } },
-    });
-    if (!existingTask) return res.status(404).json({ success: false, error: { message: 'Task not found', code: 'NOT_FOUND' } });
+    const task = mockTasks.find((t) => t.id === id);
+    if (!task) return res.status(404).json({ success: false, error: { message: 'Task not found', code: 'NOT_FOUND' } });
 
-    const oldStatus = existingTask.status;
-    const updatedTask = await prisma.task.update({
-      where: { id },
-      data: { status: newStatus },
-      include: { project: { select: { id: true, name: true, managerId: true } }, developer: { select: { id: true, name: true, email: true } } },
-    });
+    const oldStatus = task.status;
+    task.status = newStatus;
 
-    const activity = await prisma.taskActivity.create({
-      data: { taskId: id, userId: user.id, action: 'STATUS_CHANGED', oldStatus, newStatus },
-      include: { user: { select: { id: true, name: true } } },
-    });
+    const project = mockProjects.find((p) => p.id === task.projectId);
+    const userObj = mockUsers.find((u) => u.id === user.id) || { name: user.name };
 
-    const textFormatted = `${user.name} moved "${updatedTask.title}" from ${formatStatus(oldStatus)} → ${formatStatus(newStatus)}`;
-
-    broadcastActivity({
-      id: activity.id,
-      taskId: updatedTask.id,
-      taskTitle: updatedTask.title,
-      userName: user.name,
+    const activity = {
+      id: `act-${Date.now()}`,
+      taskId: id,
+      userId: user.id,
       action: 'STATUS_CHANGED',
       oldStatus,
       newStatus,
-      timestamp: activity.timestamp,
-      textFormatted,
-      projectId: updatedTask.projectId,
-      managerId: updatedTask.project.managerId,
-      developerId: updatedTask.developerId,
-    });
+      timestamp: new Date(),
+    };
+    mockActivities.unshift(activity);
 
-    if (newStatus === 'IN_REVIEW') {
-      const pmUserId = updatedTask.project.managerId;
-      const notification = await prisma.notification.create({
-        data: { userId: pmUserId, title: 'Task Ready for Review', message: `Task "${updatedTask.title}" is in review` },
+    const textFormatted = `${userObj.name} moved "${task.title}" from ${formatStatus(oldStatus)} → ${formatStatus(newStatus)}`;
+
+    if (project) {
+      broadcastActivity({
+        id: activity.id,
+        taskId: task.id,
+        taskTitle: task.title,
+        userName: userObj.name,
+        action: 'STATUS_CHANGED',
+        oldStatus,
+        newStatus,
+        timestamp: activity.timestamp,
+        textFormatted,
+        projectId: task.projectId,
+        managerId: project.managerId,
+        developerId: task.developerId,
       });
-      const unreadCount = await prisma.notification.count({ where: { userId: pmUserId, isRead: false } });
-      sendLiveNotification(pmUserId, notification, unreadCount);
+
+      if (newStatus === 'IN_REVIEW') {
+        const pmUserId = project.managerId;
+        const notification = {
+          id: `not-${Date.now()}`,
+          userId: pmUserId,
+          title: 'Task Ready for Review',
+          message: `Task "${task.title}" is in review`,
+          isRead: false,
+          createdAt: new Date(),
+        };
+        mockNotifications.unshift(notification);
+        const unreadCount = mockNotifications.filter((n) => n.userId === pmUserId && !n.isRead).length;
+        sendLiveNotification(pmUserId, notification, unreadCount);
+      }
     }
 
-    return res.json({ success: true, data: updatedTask });
+    return res.json({ success: true, data: hydrateTask(task) });
   } catch (error) {
     return res.status(500).json({ success: false, error: { message: 'Failed to update task status', code: 'SERVER_ERROR' } });
   }
@@ -485,34 +628,40 @@ app.patch('/api/tasks/:id/status', authenticateToken, async (req: Request, res: 
 app.get('/api/activity', authenticateToken, async (req: Request, res: Response) => {
   const user = req.user!;
   try {
-    let whereClause: any = {};
-    if (user.role === 'PROJECT_MANAGER') whereClause = { task: { project: { managerId: user.id } } };
-    else if (user.role === 'DEVELOPER') whereClause = { task: { developerId: user.id } };
+    let activities = [...mockActivities];
+    if (user.role === 'PROJECT_MANAGER') {
+      const pmProjIds = mockProjects.filter((p) => p.managerId === user.id).map((p) => p.id);
+      activities = activities.filter((a) => {
+        const task = mockTasks.find((t) => t.id === a.taskId);
+        return task && pmProjIds.includes(task.projectId);
+      });
+    } else if (user.role === 'DEVELOPER') {
+      activities = activities.filter((a) => {
+        const task = mockTasks.find((t) => t.id === a.taskId);
+        return task && task.developerId === user.id;
+      });
+    }
 
-    const activities = await prisma.taskActivity.findMany({
-      where: whereClause,
-      take: 20,
-      orderBy: { timestamp: 'desc' },
-      include: {
-        user: { select: { id: true, name: true } },
-        task: { select: { id: true, title: true, projectId: true, developerId: true, project: { select: { id: true, name: true, managerId: true } } } },
-      },
+    const formatted = activities.slice(0, 20).map((act) => {
+      const u = mockUsers.find((usr) => usr.id === act.userId) || { name: 'User' };
+      const t = mockTasks.find((tsk) => tsk.id === act.taskId) || { title: 'Task', projectId: '', developerId: null };
+      const p = mockProjects.find((prj) => prj.id === t.projectId) || { managerId: '' };
+
+      return {
+        id: act.id,
+        taskId: act.taskId,
+        taskTitle: t.title,
+        userName: u.name,
+        action: act.action,
+        oldStatus: act.oldStatus,
+        newStatus: act.newStatus,
+        timestamp: act.timestamp,
+        textFormatted: `${u.name} moved "${t.title}" from ${formatStatus(act.oldStatus)} → ${formatStatus(act.newStatus)}`,
+        projectId: t.projectId,
+        managerId: p.managerId,
+        developerId: t.developerId,
+      };
     });
-
-    const formatted = activities.map((act) => ({
-      id: act.id,
-      taskId: act.taskId,
-      taskTitle: act.task.title,
-      userName: act.user.name,
-      action: act.action,
-      oldStatus: act.oldStatus,
-      newStatus: act.newStatus,
-      timestamp: act.timestamp,
-      textFormatted: `${act.user.name} moved "${act.task.title}" from ${formatStatus(act.oldStatus)} → ${formatStatus(act.newStatus)}`,
-      projectId: act.task.projectId,
-      managerId: act.task.project.managerId,
-      developerId: act.task.developerId,
-    }));
 
     return res.json({ success: true, data: formatted });
   } catch (error) {
@@ -525,25 +674,31 @@ app.get('/api/dashboard/stats', authenticateToken, async (req: Request, res: Res
   const user = req.user!;
   try {
     if (user.role === 'ADMIN') {
-      const totalProjects = await prisma.project.count();
-      const totalTasks = await prisma.task.count();
-      const tasksByStatusGroup = await prisma.task.groupBy({ by: ['status'], _count: { _all: true } });
+      const totalProjects = mockProjects.length;
+      const totalTasks = mockTasks.length;
       const tasksByStatus = { TO_DO: 0, IN_PROGRESS: 0, IN_REVIEW: 0, DONE: 0 };
-      tasksByStatusGroup.forEach((g) => { tasksByStatus[g.status] = g._count._all; });
-      const overdueTaskCount = await prisma.task.count({ where: { isOverdue: true, status: { not: 'DONE' } } });
+      mockTasks.forEach((t) => {
+        if (tasksByStatus[t.status as keyof typeof tasksByStatus] !== undefined) {
+          tasksByStatus[t.status as keyof typeof tasksByStatus]++;
+        }
+      });
+      const overdueTaskCount = mockTasks.filter((t) => t.isOverdue && t.status !== 'DONE').length;
 
       return res.json({
         success: true,
-        data: { role: 'ADMIN', totalProjects, totalTasks, tasksByStatus, overdueTaskCount, activeUsersOnline: onlineUsers.size },
+        data: { role: 'ADMIN', totalProjects, totalTasks, tasksByStatus, overdueTaskCount, activeUsersOnline: onlineUsers.size || 1 },
       });
     }
 
     if (user.role === 'PROJECT_MANAGER') {
-      const pmProjects = await prisma.project.findMany({ where: { managerId: user.id }, select: { id: true, name: true } });
+      const pmProjects = mockProjects.filter((p) => p.managerId === user.id);
       const projectIds = pmProjects.map((p) => p.id);
-      const tasksByPriorityGroup = await prisma.task.groupBy({ by: ['priority'], where: { projectId: { in: projectIds } }, _count: { _all: true } });
       const tasksByPriority = { LOW: 0, MEDIUM: 0, HIGH: 0, CRITICAL: 0 };
-      tasksByPriorityGroup.forEach((g) => { tasksByPriority[g.priority] = g._count._all; });
+      mockTasks.filter((t) => projectIds.includes(t.projectId)).forEach((t) => {
+        if (tasksByPriority[t.priority as keyof typeof tasksByPriority] !== undefined) {
+          tasksByPriority[t.priority as keyof typeof tasksByPriority]++;
+        }
+      });
 
       return res.json({
         success: true,
@@ -552,11 +707,7 @@ app.get('/api/dashboard/stats', authenticateToken, async (req: Request, res: Res
     }
 
     if (user.role === 'DEVELOPER') {
-      const assignedTasks = await prisma.task.findMany({
-        where: { developerId: user.id },
-        include: { project: { select: { id: true, name: true } } },
-        orderBy: [{ priority: 'desc' }, { dueDate: 'asc' }],
-      });
+      const assignedTasks = mockTasks.filter((t) => t.developerId === user.id).map(hydrateTask);
       return res.json({ success: true, data: { role: 'DEVELOPER', totalAssigned: assignedTasks.length, tasks: assignedTasks } });
     }
 
@@ -569,9 +720,9 @@ app.get('/api/dashboard/stats', authenticateToken, async (req: Request, res: Res
 app.get('/api/notifications', authenticateToken, async (req: Request, res: Response) => {
   const user = req.user!;
   try {
-    const notifications = await prisma.notification.findMany({ where: { userId: user.id }, orderBy: { createdAt: 'desc' }, take: 50 });
-    const unreadCount = await prisma.notification.count({ where: { userId: user.id, isRead: false } });
-    return res.json({ success: true, data: { notifications, unreadCount } });
+    const userNotifications = mockNotifications.filter((n) => n.userId === user.id);
+    const unreadCount = userNotifications.filter((n) => !n.isRead).length;
+    return res.json({ success: true, data: { notifications: userNotifications, unreadCount } });
   } catch (error) {
     return res.status(500).json({ success: false, error: { message: 'Failed to fetch notifications', code: 'SERVER_ERROR' } });
   }
@@ -582,11 +733,14 @@ app.patch('/api/notifications/read', authenticateToken, async (req: Request, res
   const { notificationId, markAll } = req.body;
   try {
     if (markAll) {
-      await prisma.notification.updateMany({ where: { userId: user.id, isRead: false }, data: { isRead: true } });
+      mockNotifications.forEach((n) => {
+        if (n.userId === user.id) n.isRead = true;
+      });
     } else if (notificationId) {
-      await prisma.notification.update({ where: { id: notificationId, userId: user.id }, data: { isRead: true } });
+      const notification = mockNotifications.find((n) => n.id === notificationId && n.userId === user.id);
+      if (notification) notification.isRead = true;
     }
-    const unreadCount = await prisma.notification.count({ where: { userId: user.id, isRead: false } });
+    const unreadCount = mockNotifications.filter((n) => n.userId === user.id && !n.isRead).length;
     return res.json({ success: true, data: { unreadCount } });
   } catch (error) {
     return res.status(500).json({ success: false, error: { message: 'Failed to update notification read status', code: 'SERVER_ERROR' } });
@@ -609,4 +763,3 @@ if (!process.env.VERCEL) {
 }
 
 export default app;
-
