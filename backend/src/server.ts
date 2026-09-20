@@ -8,7 +8,9 @@ import jwt from 'jsonwebtoken';
 import cron from 'node-cron';
 import { z } from 'zod';
 import { Server as SocketIOServer, Socket } from 'socket.io';
-import { PrismaClient, Role, TaskStatus, Priority } from '@prisma/client';
+export type Role = 'ADMIN' | 'PROJECT_MANAGER' | 'DEVELOPER';
+export type TaskStatus = 'TO_DO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'DONE';
+export type Priority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 
 dotenv.config();
 
@@ -20,9 +22,10 @@ const config = {
   clientUrl: process.env.CLIENT_URL || '*',
 };
 
-let prisma: PrismaClient | null = null;
+let prisma: any = null;
 if (process.env.DATABASE_URL) {
   try {
+    const { PrismaClient } = require('@prisma/client');
     prisma = new PrismaClient();
   } catch (e) {
     console.log('[Prisma] Database URL not available, falling back to In-Memory store');
@@ -502,7 +505,7 @@ const createTaskSchema = z.object({
   description: z.string(),
   projectId: z.string(),
   developerId: z.string().optional().nullable(),
-  priority: z.nativeEnum(Priority).default(Priority.MEDIUM),
+  priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']).default('MEDIUM'),
   dueDate: z.string(),
 });
 
