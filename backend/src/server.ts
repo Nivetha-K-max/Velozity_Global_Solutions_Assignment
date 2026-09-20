@@ -185,21 +185,23 @@ function sendLiveNotification(userId: string, notification: any, unreadCount: nu
   io.to(`user:${userId}`).emit('notification:new', { notification, unreadCount });
 }
 
-// Background scheduler checking overdue tasks every minute
-cron.schedule('* * * * *', async () => {
-  try {
-    const now = new Date();
-    const result = await prisma.task.updateMany({
-      where: { dueDate: { lt: now }, status: { not: 'DONE' }, isOverdue: false },
-      data: { isOverdue: true },
-    });
-    if (result.count > 0) {
-      console.log(`[Overdue Cron] Flagged ${result.count} overdue tasks`);
+// Background scheduler checking overdue tasks every minute (local environment)
+if (!process.env.VERCEL) {
+  cron.schedule('* * * * *', async () => {
+    try {
+      const now = new Date();
+      const result = await prisma.task.updateMany({
+        where: { dueDate: { lt: now }, status: { not: 'DONE' }, isOverdue: false },
+        data: { isOverdue: true },
+      });
+      if (result.count > 0) {
+        console.log(`[Overdue Cron] Flagged ${result.count} overdue tasks`);
+      }
+    } catch (error) {
+      console.error('[Overdue Cron Error]', error);
     }
-  } catch (error) {
-    console.error('[Overdue Cron Error]', error);
-  }
-});
+  });
+}
 
 // Server Middleware Configuration
 app.use(cors({ origin: config.clientUrl, credentials: true }));
@@ -600,9 +602,11 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   });
 });
 
-server.listen(config.port, () => {
-  console.log(`[Server] Agency Dashboard Backend running on http://localhost:${config.port}`);
-});
+if (!process.env.VERCEL) {
+  server.listen(config.port, () => {
+    console.log(`[Server] Agency Dashboard Backend running on http://localhost:${config.port}`);
+  });
+}
 
 export default app;
 

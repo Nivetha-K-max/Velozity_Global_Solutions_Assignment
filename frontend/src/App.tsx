@@ -208,8 +208,10 @@ export function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
-      const data = await res.json();
-      if (!data.success) throw new Error(data.error?.message || 'Login failed');
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data || !data.success) {
+        throw new Error(data?.error?.message || `Server Error (${res.status}): Please check backend DATABASE_URL environment variable on Vercel.`);
+      }
 
       setToken(data.data.accessToken);
       setUser(data.data.user);
@@ -236,8 +238,10 @@ export function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: demoEmail, password: 'password123' }),
       });
-      const data = await res.json();
-      if (!data.success) throw new Error(data.error?.message || 'Quick login failed');
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data || !data.success) {
+        throw new Error(data?.error?.message || `Server Error (${res.status}): Please check backend DATABASE_URL environment variable on Vercel.`);
+      }
 
       setToken(data.data.accessToken);
       setUser(data.data.user);
