@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: velozity-backend
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install && npx prisma generate && npm run build
+    startCommand: npx prisma db push && npm run seed && npm start
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_ACCESS_SECRET
+        value: velozity_access_secret_key_2026_super_secure
+      - key: JWT_REFRESH_SECRET
+        value: velozity_refresh_secret_key_2026_super_secure
+      - key: CLIENT_URL
+        sync: false
+
+  - type: web
+    name: velozity-frontend
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
