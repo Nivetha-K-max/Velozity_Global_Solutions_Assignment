@@ -222,23 +222,33 @@ export function App() {
     }
   };
 
-  const quickLogin = (demoEmail: string) => {
+  const [activeQuickEmail, setActiveQuickEmail] = useState<string | null>(null);
+
+  const quickLogin = async (demoEmail: string) => {
     setEmail(demoEmail);
     setPassword('password123');
-    fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: demoEmail, password: 'password123' }),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success) {
-          setToken(data.data.accessToken);
-          setUser(data.data.user);
-          localStorage.setItem('token', data.data.accessToken);
-          localStorage.setItem('user', JSON.stringify(data.data.user));
-        }
+    setLoginError(null);
+    setIsSubmitting(true);
+    setActiveQuickEmail(demoEmail);
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: demoEmail, password: 'password123' }),
       });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error?.message || 'Quick login failed');
+
+      setToken(data.data.accessToken);
+      setUser(data.data.user);
+      localStorage.setItem('token', data.data.accessToken);
+      localStorage.setItem('user', JSON.stringify(data.data.user));
+    } catch (err: any) {
+      setLoginError(err.message || 'Authentication failed');
+    } finally {
+      setIsSubmitting(false);
+      setActiveQuickEmail(null);
+    }
   };
 
   const handleLogout = () => {
@@ -295,52 +305,80 @@ export function App() {
                 <div className="flex items-center space-x-2 text-amber-400 font-bold text-sm tracking-wider uppercase mb-1">
                   <span>⚡ 1-Click Evaluation Sign-In</span>
                 </div>
-                <p className="text-xs text-slate-400">Click any role card below to instantly test the portal:</p>
+                <p className="text-xs text-slate-400">Click any role card below for instant automated sign-in:</p>
               </div>
 
               <div className="space-y-3 my-auto">
                 <button
+                  type="button"
+                  disabled={isSubmitting}
                   onClick={() => quickLogin('admin@agency.com')}
-                  className="w-full p-3.5 rounded-2xl bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 text-purple-300 text-xs font-semibold text-left flex items-center justify-between transition-all group shadow-sm hover:shadow-purple-500/10"
+                  className="w-full p-3.5 rounded-2xl bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 text-purple-300 text-xs font-semibold text-left flex items-center justify-between transition-all group shadow-sm hover:shadow-purple-500/10 disabled:opacity-50 cursor-pointer"
                 >
                   <div className="flex flex-col">
-                    <span className="text-slate-100 font-bold text-sm group-hover:text-purple-300">Login as Admin</span>
+                    <span className="text-slate-100 font-bold text-sm group-hover:text-purple-300">
+                      {activeQuickEmail === 'admin@agency.com' ? 'Signing In...' : 'Login as Admin'}
+                    </span>
                     <span className="text-slate-400 text-[11px]">(Alice Admin)</span>
                   </div>
-                  <span className="text-[10px] bg-purple-500/30 text-purple-200 font-bold px-2.5 py-1 rounded-lg">Full Access</span>
+                  <span className="text-[10px] bg-purple-500/30 text-purple-200 font-bold px-2.5 py-1 rounded-lg flex items-center gap-1.5">
+                    {activeQuickEmail === 'admin@agency.com' && <RefreshCw className="w-3 h-3 animate-spin" />}
+                    Full Access
+                  </span>
                 </button>
 
                 <button
+                  type="button"
+                  disabled={isSubmitting}
                   onClick={() => quickLogin('pm1@agency.com')}
-                  className="w-full p-3.5 rounded-2xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 text-xs font-semibold text-left flex items-center justify-between transition-all group shadow-sm hover:shadow-amber-500/10"
+                  className="w-full p-3.5 rounded-2xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 text-xs font-semibold text-left flex items-center justify-between transition-all group shadow-sm hover:shadow-amber-500/10 disabled:opacity-50 cursor-pointer"
                 >
                   <div className="flex flex-col">
-                    <span className="text-slate-100 font-bold text-sm group-hover:text-amber-300">Login as PM 1</span>
+                    <span className="text-slate-100 font-bold text-sm group-hover:text-amber-300">
+                      {activeQuickEmail === 'pm1@agency.com' ? 'Signing In...' : 'Login as PM 1'}
+                    </span>
                     <span className="text-slate-400 text-[11px]">(Peter Manager)</span>
                   </div>
-                  <span className="text-[10px] bg-amber-500/30 text-amber-200 font-bold px-2.5 py-1 rounded-lg">2 Projects</span>
+                  <span className="text-[10px] bg-amber-500/30 text-amber-200 font-bold px-2.5 py-1 rounded-lg flex items-center gap-1.5">
+                    {activeQuickEmail === 'pm1@agency.com' && <RefreshCw className="w-3 h-3 animate-spin" />}
+                    2 Projects
+                  </span>
                 </button>
 
                 <button
+                  type="button"
+                  disabled={isSubmitting}
                   onClick={() => quickLogin('pm2@agency.com')}
-                  className="w-full p-3.5 rounded-2xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 text-xs font-semibold text-left flex items-center justify-between transition-all group shadow-sm hover:shadow-amber-500/10"
+                  className="w-full p-3.5 rounded-2xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 text-xs font-semibold text-left flex items-center justify-between transition-all group shadow-sm hover:shadow-amber-500/10 disabled:opacity-50 cursor-pointer"
                 >
                   <div className="flex flex-col">
-                    <span className="text-slate-100 font-bold text-sm group-hover:text-amber-300">Login as PM 2</span>
+                    <span className="text-slate-100 font-bold text-sm group-hover:text-amber-300">
+                      {activeQuickEmail === 'pm2@agency.com' ? 'Signing In...' : 'Login as PM 2'}
+                    </span>
                     <span className="text-slate-400 text-[11px]">(Pamela Boss)</span>
                   </div>
-                  <span className="text-[10px] bg-amber-500/30 text-amber-200 font-bold px-2.5 py-1 rounded-lg">1 Project</span>
+                  <span className="text-[10px] bg-amber-500/30 text-amber-200 font-bold px-2.5 py-1 rounded-lg flex items-center gap-1.5">
+                    {activeQuickEmail === 'pm2@agency.com' && <RefreshCw className="w-3 h-3 animate-spin" />}
+                    1 Project
+                  </span>
                 </button>
 
                 <button
+                  type="button"
+                  disabled={isSubmitting}
                   onClick={() => quickLogin('dev1@agency.com')}
-                  className="w-full p-3.5 rounded-2xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs font-semibold text-left flex items-center justify-between transition-all group shadow-sm hover:shadow-emerald-500/10"
+                  className="w-full p-3.5 rounded-2xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs font-semibold text-left flex items-center justify-between transition-all group shadow-sm hover:shadow-emerald-500/10 disabled:opacity-50 cursor-pointer"
                 >
                   <div className="flex flex-col">
-                    <span className="text-slate-100 font-bold text-sm group-hover:text-emerald-300">Login as Developer</span>
+                    <span className="text-slate-100 font-bold text-sm group-hover:text-emerald-300">
+                      {activeQuickEmail === 'dev1@agency.com' ? 'Signing In...' : 'Login as Developer'}
+                    </span>
                     <span className="text-slate-400 text-[11px]">(Ravi Kumar)</span>
                   </div>
-                  <span className="text-[10px] bg-emerald-500/30 text-emerald-200 font-bold px-2.5 py-1 rounded-lg">Assigned Tasks</span>
+                  <span className="text-[10px] bg-emerald-500/30 text-emerald-200 font-bold px-2.5 py-1 rounded-lg flex items-center gap-1.5">
+                    {activeQuickEmail === 'dev1@agency.com' && <RefreshCw className="w-3 h-3 animate-spin" />}
+                    Assigned Tasks
+                  </span>
                 </button>
               </div>
 
