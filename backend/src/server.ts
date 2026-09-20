@@ -119,6 +119,31 @@ function hydrateTask(task: any) {
   };
 }
 
+// FAILSAFE DB QUERY HELPER
+async function findUserByEmail(email: string) {
+  if (prisma) {
+    try {
+      const user = await prisma.user.findUnique({ where: { email } });
+      if (user) return user;
+    } catch (e) {
+      console.warn('[Prisma Error] Falling back to mock user data for email:', email);
+    }
+  }
+  return mockUsers.find((u) => u.email === email) || null;
+}
+
+async function findUserById(id: string) {
+  if (prisma) {
+    try {
+      const user = await prisma.user.findUnique({ where: { id } });
+      if (user) return user;
+    } catch (e) {
+      console.warn('[Prisma Error] Falling back to mock user data for id:', id);
+    }
+  }
+  return mockUsers.find((u) => u.id === id) || null;
+}
+
 // Token Verification Middleware
 function authenticateToken(req: Request, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
@@ -257,20 +282,12 @@ function sendLiveNotification(userId: string, notification: any, unreadCount: nu
 if (!process.env.VERCEL) {
   cron.schedule('* * * * *', async () => {
     try {
-      if (prisma) {
-        const nowTime = new Date();
-        await prisma.task.updateMany({
-          where: { dueDate: { lt: nowTime }, status: { not: 'DONE' }, isOverdue: false },
-          data: { isOverdue: true },
-        });
-      } else {
-        const nowTime = new Date();
-        mockTasks.forEach((t) => {
-          if (new Date(t.dueDate) < nowTime && t.status !== 'DONE') {
-            t.isOverdue = true;
-          }
-        });
-      }
+      const nowTime = new Date();
+      mockTasks.forEach((t) => {
+        if (new Date(t.dueDate) < nowTime && t.status !== 'DONE') {
+          t.isOverdue = true;
+        }
+      });
     } catch (error) {}
   });
 }
@@ -294,14 +311,7 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
 
   const { email, password } = parsed.data;
   try {
-    let user: any = null;
-
-    if (prisma) {
-      user = await prisma.user.findUnique({ where: { email } });
-    }
-    if (!user) {
-      user = mockUsers.find((u) => u.email === email);
-    }
+    const user = await findUserByEmail(email);
 
     if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
       return res.status(401).json({ success: false, error: { message: 'Invalid email or password', code: 'INVALID_CREDENTIALS' } });
@@ -330,13 +340,7 @@ app.post('/api/auth/refresh', async (req: Request, res: Response) => {
 
   try {
     const decoded = jwt.verify(refreshToken, config.jwtRefreshSecret) as { id: string };
-    let user: any = null;
-    if (prisma) {
-      user = await prisma.user.findUnique({ where: { id: decoded.id } });
-    }
-    if (!user) {
-      user = mockUsers.find((u) => u.id === decoded.id);
-    }
+    const user = await findUserById(decoded.id);
 
     if (!user) return res.status(401).json({ success: false, error: { message: 'User not found', code: 'UNAUTHORIZED' } });
 
